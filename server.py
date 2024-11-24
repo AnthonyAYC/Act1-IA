@@ -1,7 +1,8 @@
-from agents import AgentRS, ContinuousObstacle, Resources
+from agents import AgentRS, ContinuousObstacle, Resources, AgentBDI
 from model import ModelIA
 from mesa.visualization import (
     SolaraViz,
+    make_plot_component,
     make_space_component,
 )
 
@@ -29,6 +30,9 @@ def agent_portrayal(agent):
     elif isinstance(agent, AgentRS):
         portrayal["color"] = "green"
         portrayal["marker"] = "o"
+    elif isinstance(agent, AgentBDI):
+        portrayal["color"] = "purple"
+        portrayal["marker"] = "o"
     return portrayal
 
 #Números no grid e o aspect equal pra balancer x e y
@@ -37,16 +41,11 @@ def post_process(ax):
     ax.set_xticks([])
     ax.set_yticks([])
 
-#Isso aqui com certeza deve deixar muito foda as coisas, mas eu sinceramente tenho preocupações maiores
-model_params = {
-    "BUSQUE COMER CIMENTO":{
-        "type": "InputText"
-    }
-
-}
-
 # Inicia o modelo
 model1 = ModelIA()
+
+#Isso aqui com certeza deve deixar muito foda as coisas, mas eu sinceramente tenho preocupações maiores
+model_params = {}
 
 #Segue a explicação do código copiado do GitHub:
 # Create visualization elements. The visualization elements are solara components
