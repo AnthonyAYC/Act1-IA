@@ -55,3 +55,171 @@ class AgentRS(AgentIA):
         while not self.model.grid.is_cell_empty(new_position):
             new_position = self.random.choice(possible_steps)
         self.model.grid.move_agent(self, new_position)
+
+
+class AgentBE(AgentIA):
+
+    def __init__(self, pos, model, base_pos = None):
+        super().__init__(pos,model)
+        self.carga = False
+        self.memory = {
+            "path": set(),  
+            "agents": {}, 
+            "resources": {},
+        }
+
+        # informação da base
+        if base_pos is None:
+            base_pos = (1, 1)
+        self.base_pos = base_pos
+
+    def collect(self, resources):
+        self.inventory += resources.valor
+        self.carga = True
+        self.model.grid.remove_agent(resources)
+
+    def check_neigbors(self):
+        neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=False)
+        return neighbors
+
+    # retirar não está em uso
+    def move(self, possible_steps):
+
+        possible_steps_empty =  [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos)]
+        new_position = self.random.choice(possible_steps_empty)
+
+        self.model.grid.move_agent(self, new_position)
+
+    def validPath(self, new_position):
+
+        for path in self.memory["path"]:
+            if path == new_position:
+                return False
+        
+        return True
+    
+    def pathComRecursos(self, new_position):
+
+        x1, y1 = new_position
+
+        if not self.validPath(new_position):
+            for x2 in [1,-1]:
+                for y2 in [1,-1]:
+                    pos = (x1+x2, y1+y2)
+                    if self.memory["resources"][pos] and not self.memory["resources"][pos] is None :
+                        return True
+
+
+        return False
+
+    def explorar(self):
+
+
+        # vizinhos (percepções)
+        neighbors = self.check_neigbors() 
+
+        # atualizar modelo
+        resources = []
+        agents_next = []
+
+        for neighbor in neighbors:
+            if isinstance(neighbor, Resources):
+                self.memory["resources"][neighbor.pos] = neighbor
+                resources.append(neighbor)
+            elif isinstance(neighbor, AgentIA):
+                self.memory["agents"][neighbor.pos] = neighbor
+                if isinstance(neighbor, AgentBE):
+                    agents_next.append(neighbor)
+            # Se precisar implementa para salvar obstáculos
+
+        #decidi ação 
+        resource_escolhido = None
+
+        if len(resources) > 0:
+            # pegar recurso de valor 50
+            recursos_valor_50 = [r for r in resources if r.valor == 50]
+            if recursos_valor_50 and len(agents_next) >= 1:
+                # pegar o primeiro recurso com valor 50
+                resource_escolhido = recursos_valor_50[0]
+                
+                #coletar recurso
+                # atualizar a gente aux
+                # chamar agente aux
+                # mandar agente aux a base pelas mesma posições do agente atual
+            else:
+                resources_validos = [r for r in resources if r.valor != 50]
+                if resources_validos:
+                    # pegar o recurso de maior valor (talvez retirar e pegar apenas o primeiro da lista)
+                    resource_escolhido = max(resources_validos, key=lambda obj: obj.valor)
+                    # agente coletar recurso
+                    #self.model.grid.move_agent(self, resource_escolhido.pos)
+                    self.collect(resource_escolhido)
+                    # Atualizar modelo 
+                    self.memory["resources"][resource_escolhido.pos] = None
+                    return
+
+        # move agente
+
+        # posições 
+        possible_steps = self.model.grid.get_neighborhood(
+            self.pos, moore=False, include_center=False
+        )
+
+        # posições válidas 
+        possible_steps_validas =  [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) and self.validPath(pos)]
+
+        # verificar se tem posições válidas 
+        if possible_steps_validas:
+            new_position = self.random.choice(possible_steps_validas)
+        else:
+            # pegar as posições sem obstáculos (qualquer tipo de agente)
+            possible_steps_empty =  [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos)]
+            # pegar posições que ele tem conhecimento sobre recursos próximos
+            possible_steps_resource =  [pos for pos in possible_steps_empty if self.pathComRecursos(pos)]
+
+            # verificar ser tem posições com recursos
+            if possible_steps_resource:
+                new_position = self.random.choice(possible_steps_resource)
+            else:
+                new_position = self.random.choice(possible_steps_empty)
+
+        self.model.grid.move_agent(self, new_position)
+            
+
+    def retornar(self):
+
+        if self.pos == self.base_pos:
+            # Entregar recurso
+            self.carga = False
+            # salvar recurso entrege na base 
+        else:
+            # Caminhar na direção da base
+            x, y = self.pos
+            bx, by = self.base_pos
+
+            nova_pos = (x + (1 if bx > x else -1 if bx < x else 0),
+                        y + (1 if by > y else -1 if by < y else 0))
+
+
+            if bx != x and by != y:
+                if abs(bx - x) > abs(by - y):  # Preferir movimento horizontal
+                    nova_pos = (x + (1 if bx > x else -1), y)
+                else:  # Preferir movimento vertical
+                    nova_pos = (x, y + (1 if by > y else -1))
+
+            # Verificar se posição não tem obstáculos (tá considerando todos os tipos de agent)
+            if not self.model.grid.is_cell_empty(nova_pos):
+                possible_steps = self.model.grid.get_neighborhood(
+                    self.pos, moore=False, include_center=False
+                )
+                possible_steps_empty =  [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos)]
+                nova_pos = self.random.choice(possible_steps_empty)                
+            
+
+            self.model.grid.move_agent(self, nova_pos)
+    
+    def step(self):
+        if self.carga == False:
+            self.explorar()
+        elif self.carga == True:
+            self.retornar()

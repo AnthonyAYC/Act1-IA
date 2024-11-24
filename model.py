@@ -1,5 +1,5 @@
 from mesa import Model
-from agents import AgentRS, ContinuousObstacle, Resources
+from agents import AgentRS, AgentBE, ContinuousObstacle, Resources
 from mesa.space import MultiGrid
 import random
 
@@ -26,11 +26,13 @@ class ModelIA(Model):
         self.grid = MultiGrid(width, height, torus=True)
 
         #Definir quantidades de cada entidade!
-        place_entities(self, 3, AgentRS)
+        #place_entities(self, 3, AgentRS)
+        place_entities(self, 3, AgentBE)
         place_entities(self, 20, ContinuousObstacle)
-        place_entities(self, 5, Resources)
+        place_entities(self, 8, Resources)
 
     #Função do step para visualizar
     #Mesa ajuda a chamar funções de agentes especificos bom demaizi
     def step(self):
-        self.agents_by_type[AgentRS].shuffle_do("move")
+        #self.agents_by_type[AgentRS].shuffle_do("move")
+        self.agents_by_type[AgentBE].shuffle_do("step")
