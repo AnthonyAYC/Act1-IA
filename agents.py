@@ -68,6 +68,8 @@ class AgentBE(AgentIA):
             "resources": {},
         }
 
+        self.parceiro = None
+
         # informação da base
         if base_pos is None:
             base_pos = (1, 1)
@@ -151,7 +153,8 @@ class AgentBE(AgentIA):
                 agente = agents_next[0]
                 
                 agente.carga = True
-                agente.retornar()
+                agente.parceiro = self
+
 
                 return
 
@@ -231,8 +234,26 @@ class AgentBE(AgentIA):
             self.memory["path"][nova_pos] = "Não explorado"
             self.model.grid.move_agent(self, nova_pos)
     
+    def seguir(self):
+
+        pos_parceiro = self.parceiro.pos
+
+        if pos_parceiro == self.base_pos:
+            self.carga = False
+            self.parceiro = None
+            
+
+        self.model.grid.move_agent(self, pos_parceiro)
+
+
+            
+
+
+
     def step(self):
         if self.carga == False:
             self.explorar()
         elif self.carga == True:
+            if not self.parceiro is None:
+                self.seguir()     
             self.retornar()

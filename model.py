@@ -11,7 +11,8 @@ def place_entities(model, num_entities, entity_type):
         x = model.random.randrange(model.grid.width)
         y = model.random.randrange(model.grid.height)
         if entity_type is Resources:
-            entity = entity_type((x, y), model, random.choice([10, 20, 50]))
+           # entity = entity_type((x, y), model, random.choice([10, 20, 50]))
+           entity = entity_type((x, y), model, 50)
         else:
             entity = entity_type((x, y), model)
         model.grid.place_agent(entity, (x, y))
@@ -26,10 +27,10 @@ class ModelIA(Model):
         self.grid = MultiGrid(width, height, torus=True)
 
         #Definir quantidades de cada entidade!
-        place_entities(self, 3, AgentRS)
-        place_entities(self, 3, AgentBE)
-        place_entities(self, 20, ContinuousObstacle)
-        place_entities(self, 8, Resources)
+        #place_entities(self, 3, AgentRS)
+        place_entities(self, 2, AgentBE)
+        place_entities(self, 10, ContinuousObstacle)
+        place_entities(self, 50, Resources)
 
     #Função do step para visualizar
     #Mesa ajuda a chamar funções de agentes especificos bom demaizi
