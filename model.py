@@ -20,13 +20,14 @@ def place_entities_random(model, num_entities, entity_type):
             if model.grid.is_cell_empty((x, y)):
                 break
         if entity_type is Resources:
-            entity = entity_type((x, y), model, random.choice([50]))
+            entity = entity_type((x, y), model, random.choice([10,50]))
         elif entity_type is ContinuousObstacle:
             entity = entity_type((x, y), model)
         else:
             entity = entity_type((x, y), model)
             agent_point = agents_points(entity_type)
-            model.array_points.append(agent_point)
+            if agent_point not in model.array_points:
+                model.array_points.append(agent_point)
         model.grid.place_agent(entity,entity.pos)
 
 class agents_points:
@@ -38,18 +39,19 @@ class agents_points:
 class ModelIA(Model):
 
     #Tamanho do GRID
-    def __init__(self, width=9, height=9):
+    def __init__(self, width=15, height=15):
         super().__init__()
-
+        self.width = width
+        self.height = height
         self.grid = MultiGrid(width, height, torus=True)
         self.array_points = []
         self.pos_resources = []
         #Definir quantidades de cada entidade!
         place_base(self, 2)
         place_entities_random(self, 0, AgentRS)
-        place_entities_random(self, 0, ContinuousObstacle)
-        place_entities_random(self, 4, Resources)
-        place_entities_random(self, 2, AgentBDI)
+        place_entities_random(self, 15, ContinuousObstacle)
+        place_entities_random(self, 8, Resources)
+        place_entities_random(self, 3, AgentBDI)
 
         self.running = True
 
