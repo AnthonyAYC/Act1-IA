@@ -1,7 +1,5 @@
-import random
 
 from mesa import Agent
-from numpy.ma.core import negative
 
 
 #Classe para a Base:
