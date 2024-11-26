@@ -26,7 +26,7 @@ class ModelIA(Model):
         self.grid = MultiGrid(width, height, torus=True)
 
         #Definir quantidades de cada entidade!
-        #place_entities(self, 3, AgentRS)
+        place_entities(self, 3, AgentRS)
         place_entities(self, 3, AgentBE)
         place_entities(self, 20, ContinuousObstacle)
         place_entities(self, 8, Resources)

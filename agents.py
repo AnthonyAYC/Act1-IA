@@ -63,7 +63,7 @@ class AgentBE(AgentIA):
         super().__init__(pos,model)
         self.carga = False
         self.memory = {
-            "path": set(),  
+            "path": {},  
             "agents": {}, 
             "resources": {},
         }
@@ -90,23 +90,22 @@ class AgentBE(AgentIA):
 
         self.model.grid.move_agent(self, new_position)
 
-    def validPath(self, new_position):
+    def pathExplorado(self, new_position):
 
-        for path in self.memory["path"]:
-            if path == new_position:
-                return False
+        if self.memory["path"].get(new_position) == "Explorado":
+            return True
         
-        return True
+        return False
     
     def pathComRecursos(self, new_position):
 
         x1, y1 = new_position
 
-        if not self.validPath(new_position):
+        if self.pathExplorado(new_position):
             for x2 in [1,-1]:
                 for y2 in [1,-1]:
                     pos = (x1+x2, y1+y2)
-                    if self.memory["resources"][pos] and not self.memory["resources"][pos] is None :
+                    if not self.memory["resources"].get(pos) is None and self.memory["resources"].get(pos).valor != 50:
                         return True
 
 
@@ -146,6 +145,16 @@ class AgentBE(AgentIA):
                 # atualizar a gente aux
                 # chamar agente aux
                 # mandar agente aux a base pelas mesma posições do agente atual
+                self.collect(resource_escolhido)
+                self.memory["resources"][resource_escolhido.pos] = None
+
+                agente = agents_next[0]
+                
+                agente.carga = True
+                agente.retornar()
+
+                return
+
             else:
                 resources_validos = [r for r in resources if r.valor != 50]
                 if resources_validos:
@@ -166,7 +175,7 @@ class AgentBE(AgentIA):
         )
 
         # posições válidas 
-        possible_steps_validas =  [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) and self.validPath(pos)]
+        possible_steps_validas =  [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos) and not self.pathExplorado(pos)]
 
         # verificar se tem posições válidas 
         if possible_steps_validas:
@@ -183,6 +192,7 @@ class AgentBE(AgentIA):
             else:
                 new_position = self.random.choice(possible_steps_empty)
 
+        self.memory["path"][new_position] = "Explorado"
         self.model.grid.move_agent(self, new_position)
             
 
@@ -191,6 +201,9 @@ class AgentBE(AgentIA):
         if self.pos == self.base_pos:
             # Entregar recurso
             self.carga = False
+            # atualizar modelo
+            self.memory["path"] = {key: value for key, value in self.memory["path"].items() if value != "Não explorado"}
+
             # salvar recurso entrege na base 
         else:
             # Caminhar na direção da base
@@ -208,14 +221,14 @@ class AgentBE(AgentIA):
                     nova_pos = (x, y + (1 if by > y else -1))
 
             # Verificar se posição não tem obstáculos (tá considerando todos os tipos de agent)
-            if not self.model.grid.is_cell_empty(nova_pos):
+            if not self.model.grid.is_cell_empty(nova_pos) or self.memory["path"].get(nova_pos) == "Não explorado":
                 possible_steps = self.model.grid.get_neighborhood(
                     self.pos, moore=False, include_center=False
                 )
                 possible_steps_empty =  [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos)]
                 nova_pos = self.random.choice(possible_steps_empty)                
             
-
+            self.memory["path"][nova_pos] = "Não explorado"
             self.model.grid.move_agent(self, nova_pos)
     
     def step(self):

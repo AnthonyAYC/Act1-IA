@@ -42,10 +42,7 @@ def post_process(ax):
 
 #Isso aqui com certeza deve deixar muito foda as coisas, mas eu sinceramente tenho preocupações maiores
 model_params = {
-    "BUSQUE COMER CIMENTO":{
-        "type": "InputText"
-    }
-
+   
 }
 
 # Inicia o modelo
