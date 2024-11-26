@@ -1,7 +1,8 @@
-from agents import AgentRS, AgentBE, ContinuousObstacle, Resources
+from agents import AgentRS, AgentBE, AgentBDI, ContinuousObstacle, Resources
 from model import ModelIA
 from mesa.visualization import (
     SolaraViz,
+    make_plot_component,
     make_space_component,
 )
 
@@ -31,6 +32,8 @@ def agent_portrayal(agent):
         portrayal["marker"] = "o"
     elif isinstance(agent, AgentBE):
         portrayal["color"] = "red"
+    elif isinstance(agent, AgentBDI):
+        portrayal["color"] = "purple"
         portrayal["marker"] = "o"
     return portrayal
 
@@ -47,6 +50,9 @@ model_params = {
 
 # Inicia o modelo
 model1 = ModelIA()
+
+#Isso aqui com certeza deve deixar muito foda as coisas, mas eu sinceramente tenho preocupações maiores
+model_params = {}
 
 #Segue a explicação do código copiado do GitHub:
 # Create visualization elements. The visualization elements are solara components
