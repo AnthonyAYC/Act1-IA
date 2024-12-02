@@ -1,4 +1,4 @@
-from agents import AgentRS, AgentBE, AgentBDI, ContinuousObstacle, Resources
+from agents import AgentRS, AgentBE, AgentBDI, ContinuousObstacle, Resources, AgentCoop
 from model import ModelIA
 from mesa.visualization import (
     SolaraViz,
@@ -33,6 +33,10 @@ def agent_portrayal(agent):
         portrayal["marker"] = "o"
     elif isinstance(agent, AgentBE):
         portrayal["color"] = "red"
+        portrayal["marker"] = "o"
+    elif isinstance(agent, AgentCoop):
+        portrayal["color"] = "pink"
+        portrayal["marker"] = "o"
     elif isinstance(agent, AgentBDI):
         portrayal["color"] = "purple"
         portrayal["marker"] = "o"

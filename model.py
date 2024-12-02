@@ -1,5 +1,5 @@
 from mesa import Model
-from agents import AgentBDI, AgentRS, AgentBE ,ContinuousObstacle, Resources, Base
+from agents import AgentBDI, AgentRS, AgentBE, ContinuousObstacle, Resources, Base, AgentCoop
 from mesa.space import MultiGrid
 import random
 
@@ -47,13 +47,15 @@ class ModelIA(Model):
         self.base_size = 3
         self.array_points = []
         self.pos_resources = []
+        self.anc_resources = []
         #Definir quantidades de cada entidade!
         place_base(self, self.base_size)
-        place_entities_random(self, 0, AgentRS)
-        place_entities_random(self, 10, ContinuousObstacle)
-        place_entities_random(self, 12, Resources)
-        place_entities_random(self, 2, AgentBDI)
-        place_entities_random(self, 2, AgentBE)
+        place_entities_random(self, 8, ContinuousObstacle)
+        place_entities_random(self, 5, Resources)
+        place_entities_random(self, 1, AgentBDI)
+        place_entities_random(self, 1, AgentBE)
+        place_entities_random(self, 1, AgentCoop)
+        place_entities_random(self, 1, AgentRS)
 
 
         self.running = True
@@ -62,8 +64,9 @@ class ModelIA(Model):
     #Função do step para visualizar
     #Mesa ajuda a chamar funções de agentes especificos bom demaizi
     def step(self):
-        #self.agents_by_type[AgentRS].do("step")
+        self.agents_by_type[AgentRS].do("step")
         self.agents_by_type[AgentBE].do("check")
+        self.agents_by_type[AgentCoop].do("check")
         self.agents_by_type[AgentBDI].do("check")
 
         for i in self.array_points:
