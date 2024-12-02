@@ -39,7 +39,7 @@ class AgentsPoints:
 class ModelIA(Model):
 
     #Tamanho do GRID
-    def __init__(self, width=15, height=15):
+    def __init__(self, width=12, height=12):
         super().__init__()
         self.width = width
         self.height = height
@@ -51,9 +51,9 @@ class ModelIA(Model):
         place_base(self, self.base_size)
         place_entities_random(self, 0, AgentRS)
         place_entities_random(self, 10, ContinuousObstacle)
-        place_entities_random(self, 8, Resources)
-        place_entities_random(self, 4, AgentBDI)
-        place_entities_random(self, 0, AgentBE)
+        place_entities_random(self, 12, Resources)
+        place_entities_random(self, 2, AgentBDI)
+        place_entities_random(self, 2, AgentBE)
 
 
         self.running = True
@@ -63,7 +63,7 @@ class ModelIA(Model):
     #Mesa ajuda a chamar funções de agentes especificos bom demaizi
     def step(self):
         #self.agents_by_type[AgentRS].do("step")
-        #self.agents_by_type[AgentBE].do("step")
+        self.agents_by_type[AgentBE].do("check")
         self.agents_by_type[AgentBDI].do("check")
 
         for i in self.array_points:

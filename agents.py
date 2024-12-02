@@ -119,194 +119,186 @@ class AgentRS(AgentIA):
 
 class AgentBE(AgentIA):
 
-    def __init__(self, pos, model, base_pos=None):
+    _RECURSO = "Recurso"
+    _RECURSOCOLETADO = "Recurso Coletado"
+    _EXPLORADO = "Explorado"
+    _VISITADO = "Visitado"
+    _OBSTACULOS = "Obstáculos"
+    _AGENTE = "Agente"
+    _VAZIO = "Vazio"
+
+
+    def __init__(self, pos, model):
         super().__init__(pos, model)
-        self.carga = False
-        self.memory = {
-            "path": {},
-            "agents": {},
-            "resources": {},
-        }
+        self.memory = {}
+        self.acao = 'moveRandom'
 
-        self.parceiro = None
+    
 
-        # informação da base
-        if base_pos is None:
-            base_pos = (1, 1)
-        self.base_pos = base_pos
-
-    def collect(self, resources):
-        self.inventory += resources.valor
-        self.carga = True
-        self.model.grid.remove_agent(resources)
-
-    def check_neighbors(self):
+    def percepcoes(self):
         neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=False)
-        return neighbors
 
-    # retirar não está em uso
-    def move_random(self, possible_steps):
-
-        possible_steps_empty = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos)]
-        new_position = self.random.choice(possible_steps_empty)
-
-        self.model.grid.move_agent(self, new_position)
-
-    def pathExplorado(self, new_position):
-
-        if self.memory["path"].get(new_position) == "Explorado":
-            return True
-
-        return False
-
-    def pathComRecursos(self, new_position):
-
-        x1, y1 = new_position
-
-        if self.pathExplorado(new_position):
-            for x2 in [1, -1]:
-                for y2 in [1, -1]:
-                    pos = (x1 + x2, y1 + y2)
-                    if not self.memory["resources"].get(pos) is None and self.memory["resources"].get(pos).valor != 50:
-                        return True
-
-        return False
-
-    def explorar(self):
-
-        # vizinhos (percepções)
-        neighbors = self.check_neighbors()
-
-        # atualizar modelo
-        resources = []
-        agents_next = []
-
-        for neighbor in neighbors:
-            if isinstance(neighbor, Resources):
-                self.memory["resources"][neighbor.pos] = neighbor
-                resources.append(neighbor)
-            elif isinstance(neighbor, AgentIA):
-                self.memory["agents"][neighbor.pos] = neighbor
-                if isinstance(neighbor, AgentBE):
-                    agents_next.append(neighbor)
-            # Se precisar implementa para salvar obstáculos
-
-        # decidi ação
-        resource_escolhido = None
-
-        if len(resources) > 0:
-            # pegar recurso de valor 50
-            recursos_valor_50 = [r for r in resources if r.valor == 50]
-            if recursos_valor_50 and len(agents_next) >= 1:
-                # pegar o primeiro recurso com valor 50
-                resource_escolhido = recursos_valor_50[0]
-
-                # coletar recurso
-                # atualizar a gente aux
-                # chamar agente aux
-                # mandar agente aux a base pelas mesma posições do agente atual
-                self.collect(resource_escolhido)
-                self.memory["resources"][resource_escolhido.pos] = None
-
-                agente = agents_next[0]
-
-                agente.carga = True
-                agente.parceiro = self
-
-                return
-
-            else:
-                resources_validos = [r for r in resources if r.valor != 50]
-                if resources_validos:
-                    # pegar o recurso de maior valor (talvez retirar e pegar apenas o primeiro da lista)
-                    resource_escolhido = max(resources_validos, key=lambda obj: obj.valor)
-                    # agente coletar recurso
-                    # self.model.grid.move_agent(self, resource_escolhido.pos)
-                    self.collect(resource_escolhido)
-                    # Atualizar modelo
-                    self.memory["resources"][resource_escolhido.pos] = None
-                    return
-
-        # move agente
-
-        # posições
-        possible_steps = self.model.grid.get_neighborhood(
+        neighborhood = self.model.grid.get_neighborhood(
             self.pos, moore=False, include_center=False
         )
 
-        # posições válidas
-        possible_steps_validas = [pos for pos in possible_steps if
-                                  self.model.grid.is_cell_empty(pos) and not self.pathExplorado(pos)]
+        perception = {}
 
-        # verificar se tem posições válidas
-        if possible_steps_validas:
-            new_position = self.random.choice(possible_steps_validas)
+        for position in neighborhood:
+
+            perception[position] = self._VAZIO
+            for neighbor in neighbors:
+
+                if position == neighbor.pos:
+                    perception[position] = neighbor
+                    break
+
+        print('Percepções:', perception)
+
+        return perception
+
+    def atualizarConhecimento(self, percepcoes):
+
+        estado = {}
+
+        for pos, percepcao in percepcoes.items():
+
+            if isinstance(percepcao, Resources):
+                self.memory[pos] = self._RECURSO
+                estado[self._RECURSO] = True
+            elif isinstance(percepcao, ContinuousObstacle):
+                self.memory[pos] = self._OBSTACULOS
+                estado[self._OBSTACULOS] = True
+            elif isinstance(percepcao, AgentIA):
+                self.memory[pos] = self._AGENTE
+            elif self.lastPos != pos:
+                self.memory[pos] = self._VAZIO
+
+        if self.inventory == 0:  
+            self.memory[self.pos] = self._EXPLORADO
         else:
-            # pegar as posições sem obstáculos (qualquer tipo de agente)
-            possible_steps_empty = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos)]
-            # pegar posições que ele tem conhecimento sobre recursos próximos
-            possible_steps_resource = [pos for pos in possible_steps_empty if self.pathComRecursos(pos)]
+            self.memory[self.pos] = self._VISITADO
 
-            # verificar ser tem posições com recursos
-            if possible_steps_resource:
-                new_position = self.random.choice(possible_steps_resource)
-            else:
-                new_position = self.random.choice(possible_steps_empty)
+        
+    def escolherAcao(self, percepcoes, acao_atual):
 
-        self.memory["path"][new_position] = "Explorado"
-        self.model.grid.move_agent(self, new_position)
+        resources = []
+        agents_next = []
+        obstaculos = []
+        possible_steps = []
+        base = []
 
-    def retornar(self):
+        # Processa percepções
+        for pos, percepcao in percepcoes.items():
+            if isinstance(percepcao, Resources):
+                resources.append(percepcao)
+            elif isinstance(percepcao, ContinuousObstacle):
+                obstaculos.append(percepcao)
+            elif isinstance(percepcao, AgentIA):
+                agents_next.append(percepcao)
+            elif isinstance(percepcao, Base):
+                base.append(percepcao)
+            elif self.memory.get(pos) != self._EXPLORADO:
+                possible_steps.append(pos)
 
-        if self.pos == self.base_pos:
-            # Entregar recurso
-            self.carga = False
-            # atualizar modelo
-            self.memory["path"] = {key: value for key, value in self.memory["path"].items() if value != "Não explorado"}
+        if self.partner is not None and acao_atual == 'Seguir':
+            if not base:
+                return {'acao': acao_atual}
+            
+            return {'acao': 'deliver', 'base': base}
 
-            # salvar recurso entrege na base
-        else:
-            # Caminhar na direção da base
-            x, y = self.pos
-            bx, by = self.base_pos
+        # Determina a ação com base nas condições
+        if acao_atual == 'RetornaABase':
+            # Continua indo para a base se ainda não foi encontrada
+            if not base:
+                return {'acao': acao_atual}
+            # Entregar recursos na base
+            return {'acao': 'deliver', 'base': base}
 
-            nova_pos = (x + (1 if bx > x else -1 if bx < x else 0),
-                        y + (1 if by > y else -1 if by < y else 0))
+        # Retorna à base após coletar recurso
+        if acao_atual in ['collect', 'collect10e20']:
+            return {'acao': 'RetornaABase'}
 
-            if bx != x and by != y:
-                if abs(bx - x) > abs(by - y):  # Preferir movimento horizontal
-                    nova_pos = (x + (1 if bx > x else -1), y)
-                else:  # Preferir movimento vertical
-                    nova_pos = (x, y + (1 if by > y else -1))
+        # Coleta recursos se há agentes próximos
+        if resources and agents_next:
+            resources_validos = [r for r in resources if r.valor == 50]
+            agente_validos = [a for a in agents_next if isinstance(a, AgentBE)]
+            # Verifica se tem agentes próximos (mesmo tipo) e recursos com valor 50
+            if resources_validos and agente_validos:
+                return {'acao': 'collect', 'recursos': resources_validos, 'agentes': agente_validos}
 
-            # Verificar se posição não tem obstáculos (tá considerando todos os tipos de agent)
-            if not self.model.grid.is_cell_empty(nova_pos) or self.memory["path"].get(nova_pos) == "Não explorado":
-                possible_steps = self.model.grid.get_neighborhood(
-                    self.pos, moore=False, include_center=False
-                )
-                possible_steps_empty = [pos for pos in possible_steps if self.model.grid.is_cell_empty(pos)]
-                nova_pos = self.random.choice(possible_steps_empty)
+        # Coleta recursos específicos (10 e 20)
+        if resources:
+            resources_validos = [r for r in resources if r.valor != 50]
+            # Verifica se tem recursos com valores 10 e 20
+            if resources_validos:
+                return {'acao': 'collect10e20', 'recursos': resources_validos}
 
-            self.memory["path"][nova_pos] = "Não explorado"
-            self.model.grid.move_agent(self, nova_pos)
+        # Move para posições não exploradas
+        if possible_steps:
+            return {'acao': 'moveToPos', 'steps': possible_steps}
 
-    def seguir(self):
+        # Move aleatoriamente se não há opções melhores
+        return {'acao': 'moveRandom'}
 
-        pos_parceiro = self.parceiro.pos
 
-        if pos_parceiro == self.base_pos:
-            self.carga = False
-            self.parceiro = None
+    def excutarAcao(self, acao_regras):
 
-        self.model.grid.move_agent(self, pos_parceiro)
+        if acao_regras['acao'] == 'RetornaABase':
+            self.move_to_base()
+            print('Item valor: {}'.format(self.inventory))
+        elif acao_regras['acao'] == 'deliver':
+            self.deliver()
+        elif acao_regras['acao'] == 'collect10e20':
+            resource_escolhido = max(acao_regras['recursos'], key=lambda obj: obj.valor)
+            self.collect(resource_escolhido)
+        elif acao_regras['acao'] == 'collect':
+            resource_escolhido = max(acao_regras['recursos'], key=lambda obj: obj.valor)
 
-    def step(self):
-        if self.carga == False:
-            self.explorar()
-        elif self.carga == True:
-            if not self.parceiro is None:
-                self.seguir()
-            self.retornar()
+            agente_partner = acao_regras['agentes'][0]
+            
+            self.partner = agente_partner
+            agente_partner.partner = self
+
+            self.partner.acao = 'Seguir'
+            
+            resource_escolhido.can_collect = True
+
+            self.collect(resource_escolhido)
+        elif acao_regras['acao'] == 'moveToPos':
+            possible_steps = acao_regras['steps']
+            new_position = self.random.choice(possible_steps)
+            self.model.grid.move_agent(self, new_position)           
+        elif acao_regras['acao'] == 'moveRandom':
+            self.move_random()
+            
+        self.acao = acao_regras['acao']
+
+        return
+    
+    def check(self):
+
+        print("-------------------------")
+        print("Agente: {}".format(self))
+        print("Parceiro: {}".format(self.partner))
+        print("Ação atual: {}".format(self.acao))
+
+
+        percepcoes = self.percepcoes()
+        
+        self.atualizarConhecimento(percepcoes)
+
+        acao = self.escolherAcao(percepcoes, self.acao)
+
+
+        self.excutarAcao(acao)
+        
+       
+        print("Ação nova: {}".format(self.acao))
+        print("-------------------------")
+   
+
+
 
 
 class AgentBDI(AgentIA):

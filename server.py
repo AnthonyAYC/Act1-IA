@@ -80,3 +80,6 @@ page = SolaraViz(
     name="MESA Python Test",
 )
 page  # noqa
+
+
+model1.step()
