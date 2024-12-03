@@ -1,5 +1,5 @@
 from mesa import Model
-from agents import AgentBDI, AgentRS, AgentBE, ContinuousObstacle, Resources, Base, AgentCoop
+from agents import AgentBDI, AgentRS, AgentBE, ContinuousObstacle, Resources, Base, AgentCoop, AgentBO
 from mesa.space import MultiGrid
 import random
 
@@ -39,7 +39,7 @@ class AgentsPoints:
 class ModelIA(Model):
 
     #Tamanho do GRID
-    def __init__(self, width=18, height=18):
+    def __init__(self, width=25, height=25):
         super().__init__()
         self.width = width
         self.height = height
@@ -51,12 +51,13 @@ class ModelIA(Model):
         #Definir quantidades de cada entidade!
         place_base(self, self.base_size)
 
-        place_entities_random(self, 5, ContinuousObstacle)
-        place_entities_random(self, 20, Resources)
+        place_entities_random(self, 15, ContinuousObstacle)
+        place_entities_random(self, 30, Resources)
         place_entities_random(self, 2, AgentBDI)
         place_entities_random(self, 2, AgentBE)
         place_entities_random(self, 2, AgentCoop)
         place_entities_random(self, 2, AgentRS)
+        place_entities_random(self, 2, AgentBO)
 
 
         self.running = True
@@ -69,6 +70,8 @@ class ModelIA(Model):
         self.agents_by_type[AgentBE].do("check")
         self.agents_by_type[AgentCoop].do("check")
         self.agents_by_type[AgentBDI].do("check")
+        self.agents_by_type[AgentBO].do("step")
+
 
         for i in self.array_points:
             print("Tipo: {} | Pontos: {}".format(i.agent_type, i.point))

@@ -571,3 +571,51 @@ class AgentBDI(AgentIA):
                     self.move_random()
                 else:
                     self.move_to_pos(self.priority())
+
+
+class AgentBO(AgentIA):  # Agora herda de AgentIA
+    def __init__(self, pos, model):
+        super().__init__(pos, model)
+        self.target_resource = None
+        self.known_resources = []  # Lista de recursos conhecidos
+
+    def update_known_resources(self):
+        # Acessa o painel de informações administrado pelos agentes BDI
+        self.known_resources = self.model.pos_resources  # Atualiza os recursos conhecidos
+
+    def find_closest_known_resource(self):
+        # Busca o recurso mais próximo na lista de recursos conhecidos
+        min_distance = float("inf")
+        closest_resource = None
+        for resource in self.known_resources:
+            distance = abs(self.pos[0] - resource.pos[0]) + abs(self.pos[1] - resource.pos[1])
+            if distance < min_distance:
+                min_distance = distance
+                closest_resource = resource
+        return closest_resource
+
+    def step(self):
+        # Atualiza os recursos conhecidos a partir dos dados dos agentes BDI
+        self.update_known_resources()
+        self.check_neighbors()
+        if self.inventory == 0:
+            if not self.known_resources:
+                # Caso não haja recursos conhecidos, move aleatoriamente
+                self.move_random()  # Usa o método herdado de AgentIA
+                
+            else:
+                # Se houver recursos conhecidos, encontra o mais próximo e move para ele
+                self.target_resource = self.find_closest_known_resource()
+
+                if self.target_resource:
+                    # Verifica se o agente está na posição do recurso e coleta
+                    if self.pos == self.target_resource.pos:
+                        self.collect(self.target_resource)
+                    else:
+                        self.move_to_pos(self.target_resource.pos)  # Move em direção ao recurso conhecido
+        else:
+            # Se estiver carregando um recurso, move-se para a base e entrega
+            self.deliver()  # Realiza a entrega na base
+            self.move_to_base()  # Usa o método herdado de AgentIA para mover até a base
+
+           
