@@ -53,11 +53,11 @@ class ModelIA(Model):
 
         place_entities_random(self, 15, ContinuousObstacle)
         place_entities_random(self, 30, Resources)
-        #place_entities_random(self, 2, AgentBDI)
+        place_entities_random(self, 2, AgentBDI)
         place_entities_random(self, 2, AgentBE)
-        # place_entities_random(self, 2, AgentCoop)
-        # place_entities_random(self, 2, AgentRS)
-        # place_entities_random(self, 2, AgentBO)
+        place_entities_random(self, 2, AgentCoop)
+        place_entities_random(self, 2, AgentRS)
+        place_entities_random(self, 2, AgentBO)
 
 
         self.running = True
@@ -66,11 +66,11 @@ class ModelIA(Model):
     #Função do step para visualizar
     #Mesa ajuda a chamar funções de agentes especificos bom demaizi
     def step(self):
-        #self.agents_by_type[AgentRS].do("step")
+        self.agents_by_type[AgentRS].do("step")
         self.agents_by_type[AgentBE].do("check")
-        #self.agents_by_type[AgentCoop].do("check")
-        #self.agents_by_type[AgentBDI].do("check")
-        #self.agents_by_type[AgentBO].do("step")
+        self.agents_by_type[AgentCoop].do("check")
+        self.agents_by_type[AgentBDI].do("check")
+        self.agents_by_type[AgentBO].do("step")
 
 
         for i in self.array_points:
