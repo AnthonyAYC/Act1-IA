@@ -161,25 +161,34 @@ class AgentBE(AgentIA):
 
     def atualizarConhecimento(self, percepcoes):
 
-        estado = {}
 
         for pos, percepcao in percepcoes.items():
 
             if isinstance(percepcao, Resources):
                 self.memory[pos] = self._RECURSO
-                estado[self._RECURSO] = True
             elif isinstance(percepcao, ContinuousObstacle):
                 self.memory[pos] = self._OBSTACULOS
-                estado[self._OBSTACULOS] = True
             elif isinstance(percepcao, AgentIA):
                 self.memory[pos] = self._AGENTE
-            elif self.lastPos != pos:
+            elif self.memory.get(pos) is None:
                 self.memory[pos] = self._VAZIO
+                  
 
         if self.inventory == 0:  
             self.memory[self.pos] = self._EXPLORADO
         else:
             self.memory[self.pos] = self._VISITADO
+
+
+    def ePosicaoExploradaUtil(self, pos):
+
+        x,y = pos
+
+        for x1, y1 in [(0, -1), (-1, 0), (1, 0), (0, 1)]: 
+            if self.memory.get((x + x1, y + y1)) == self._RECURSO:
+                return True
+        
+        return False
 
         
     def escolherAcao(self, percepcoes, acao_atual):
@@ -202,6 +211,10 @@ class AgentBE(AgentIA):
                 base.append(percepcao)
             elif self.memory.get(pos) != self._EXPLORADO:
                 possible_steps.append(pos)
+            elif self.memory.get(pos) == self._EXPLORADO and self.ePosicaoExploradaUtil(pos):
+                possible_steps.append(pos)
+
+
 
         if self.partner is not None and acao_atual == 'Seguir':
             if not base:
@@ -236,7 +249,7 @@ class AgentBE(AgentIA):
             if resources_validos:
                 return {'acao': 'collect10e20', 'recursos': resources_validos}
 
-        # Move para posições não exploradas
+        # Move para posições não exploradas ou exploradas util
         if possible_steps:
             return {'acao': 'moveToPos', 'steps': possible_steps}
 
@@ -270,7 +283,8 @@ class AgentBE(AgentIA):
         elif acao_regras['acao'] == 'moveToPos':
             possible_steps = acao_regras['steps']
             new_position = self.random.choice(possible_steps)
-            self.model.grid.move_agent(self, new_position)           
+            print('pos: {}'.format(new_position))
+            self.move_to_pos(new_position)      
         elif acao_regras['acao'] == 'moveRandom':
             self.move_random()
             
