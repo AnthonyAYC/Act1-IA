@@ -280,12 +280,6 @@ class AgentBE(AgentIA):
     
     def check(self):
 
-        print("-------------------------")
-        print("Agente: {}".format(self))
-        print("Parceiro: {}".format(self.partner))
-        print("Ação atual: {}".format(self.acao))
-
-
         percepcoes = self.percepcoes()
         
         self.atualizarConhecimento(percepcoes)
@@ -294,17 +288,12 @@ class AgentBE(AgentIA):
 
 
         self.excutarAcao(acao)
-        
-       
-        print("Ação nova: {}".format(self.acao))
-        print("-------------------------")
-   
 
 class AgentCoop(AgentIA):
     def __init__(self, pos, model):
         super().__init__(pos, model)
 
-        self.scan()
+
 
         self.waiting = False
 
@@ -325,20 +314,22 @@ class AgentCoop(AgentIA):
             if isinstance(neighbor, Resources):
 
                 #Se não estiver no array de recursos conhecidos, adiciona!
-                if neighbor not in self.model.pos_resources:
-                    self.model.pos_resources.append(neighbor)
+
 
                 #Vizinhos do re
-                resource_neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=False)
+                resource_neighbors = self.model.grid.get_neighbors(neighbor.pos, moore=False, include_center=False)
 
                 # Se estiver de inventário vazio e não está indo ajudar outro e não está ajudando a carregar, ele pode coleta!
                 if self.agent_available():
 
                     #Se for uma estrutura antiga que exige ajuda e não há agentes ao redor aguardando
-                    if neighbor.valor == 50 and not any((isinstance(agent, AgentCoop) or isinstance(agent, AgentBDI)) and agent.waiting for agent in resource_neighbors):
+                    if neighbor.valor == 50:
                         #O agente fica aguardando
-                        self.waiting = True
+                        if not any((isinstance(agent, AgentCoop) or isinstance(agent, AgentBDI)) and agent.waiting for agent in resource_neighbors):
+                            self.waiting = True
 
+                        if neighbor not in self.model.pos_resources:
+                            self.model.pos_resources.append(neighbor)
                         #Pensando em usos futuros > resource_neighbors = self.model.grid.get_neighbors(neighbor.pos, moore=False, include_center=False)
                         agent_neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=False)
 
@@ -435,17 +426,8 @@ class AgentCoop(AgentIA):
 
     def check(self):
         self.check_neighbors()
-        print(self.model.pos_resources)
-        print("-------------------------")
-        print(self.model.anc_resources)
-        print("-------------------------")
-        print("Agente: {}".format(self))
-        print("Agente inventory: {}".format(self.inventory))
-        print("Parceiro: {}".format(self.partner))
-        print("Aguardando: {}".format(self.waiting))
-        print("Indo ajudar: {}".format(self.moving_to_pos))
-        print("-------------------------")
-        print(self.scan())
+
+
         if self.inventory != 0:
             self.move_to_base()
         else:
@@ -469,7 +451,19 @@ class AgentBDI(AgentIA):
         self.moving_to_pos = False
 
     def agent_available(self):
-        if self.inventory == 0 and not self.moving_to_pos and self.partner is None:
+        if self.inventory == 0 and not self.moving_to_pos and self.partner is None and not self.explore():
+            return True
+        else:
+            return False
+
+    def explore(self):
+        agents = -1
+        for i in self.model.grid.agents:
+            if isinstance(i, AgentCoop) or isinstance(i, AgentBDI):
+                agents+=1
+        resources = len(self.model.pos_resources)
+        #Mais agentes que recurso -> Pode focar em explorar, caso não, coletar é principal.
+        if agents > resources:
             return True
         else:
             return False
@@ -485,18 +479,17 @@ class AgentBDI(AgentIA):
                 if neighbor not in self.model.pos_resources:
                     self.model.pos_resources.append(neighbor)
 
-                # Vizinhos do re
-                resource_neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=False)
+                # Vizinhos do recurso
+                resource_neighbors = self.model.grid.get_neighbors(neighbor.pos, moore=False, include_center=False)
 
                 # Se estiver de inventário vazio e não está indo ajudar outro e não está ajudando a carregar, ele pode coleta!
                 if self.agent_available():
 
                     # Se for uma estrutura antiga que exige ajuda e não há agentes ao redor aguardando
-                    if neighbor.valor == 50 and not any(
-                            (isinstance(agent, AgentCoop) or isinstance(agent, AgentBDI)) and agent.waiting for agent in
-                            resource_neighbors):
+                    if neighbor.valor == 50:
                         # O agente fica aguardando
-                        self.waiting = True
+                        if not any((isinstance(agent, AgentCoop) or isinstance(agent, AgentBDI)) and agent.waiting for agent in resource_neighbors):
+                            self.waiting = True
 
                         # Pensando em usos futuros > resource_neighbors = self.model.grid.get_neighbors(neighbor.pos, moore=False, include_center=False)
                         agent_neighbors = self.model.grid.get_neighbors(self.pos, moore=False, include_center=False)
@@ -510,10 +503,10 @@ class AgentBDI(AgentIA):
                                 self.waiting = False
 
                                 if isinstance(i, AgentCoop):
-                                    agentsBDI = self.model.agents_by_type[AgentCoop]
+                                    agents = self.model.agents_by_type[AgentCoop]
                                 else:
-                                    agentsBDI = self.model.agents_by_type[AgentBDI]
-                                for j in agentsBDI:
+                                    agents = self.model.agents_by_type[AgentBDI]
+                                for j in agents:
                                     j.moving_to_pos = False
                                 neighbor.can_collect = True
                                 self.collect(neighbor)
@@ -539,7 +532,7 @@ class AgentBDI(AgentIA):
             #1° Prioridade - Recursos com agentes BDI aguardando!
             around_resources = self.model.grid.get_neighbors(resource.pos, moore=False, include_center=False)
             for agent in around_resources:
-                if (isinstance(agent, AgentCoop) or isinstance(agent, AgentBDI))  and agent.waiting:
+                if (isinstance(agent, AgentCoop) or isinstance(agent, AgentBDI)) and agent.waiting:
                     pos_final = agent.pos
                     self.moving_to_pos = True
                     return pos_final
@@ -556,12 +549,11 @@ class AgentBDI(AgentIA):
 
     def check(self):
         self.check_neighbors()
-
         if self.inventory != 0:
             self.move_to_base()
         else:
             if not self.waiting and self.partner is None:
-                if self.model.pos_resources:
-                    self.move_to_pos(self.priority())
-                else:
+                if self.explore():
                     self.move_random()
+                else:
+                    self.move_to_pos(self.priority())

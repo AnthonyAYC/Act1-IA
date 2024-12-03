@@ -50,12 +50,12 @@ class ModelIA(Model):
         self.anc_resources = []
         #Definir quantidades de cada entidade!
         place_base(self, self.base_size)
-        place_entities_random(self, 8, ContinuousObstacle)
-        place_entities_random(self, 5, Resources)
+        place_entities_random(self, 5, ContinuousObstacle)
+        place_entities_random(self, 10, Resources)
         place_entities_random(self, 1, AgentBDI)
-        place_entities_random(self, 1, AgentBE)
+        place_entities_random(self, 0, AgentBE)
         place_entities_random(self, 1, AgentCoop)
-        place_entities_random(self, 1, AgentRS)
+        place_entities_random(self, 0, AgentRS)
 
 
         self.running = True
@@ -64,8 +64,8 @@ class ModelIA(Model):
     #Função do step para visualizar
     #Mesa ajuda a chamar funções de agentes especificos bom demaizi
     def step(self):
-        self.agents_by_type[AgentRS].do("step")
-        self.agents_by_type[AgentBE].do("check")
+        #self.agents_by_type[AgentRS].do("step")
+        #self.agents_by_type[AgentBE].do("check")
         self.agents_by_type[AgentCoop].do("check")
         self.agents_by_type[AgentBDI].do("check")
 
