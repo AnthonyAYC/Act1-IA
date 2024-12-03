@@ -122,6 +122,7 @@ class AgentRS(AgentIA):
 class AgentBE(AgentIA):
 
     _RECURSO = "Recurso"
+    _RECURSONAOCOLETAVEL = "Recurso Não Coletavel"
     _RECURSOCOLETADO = "Recurso Coletado"
     _EXPLORADO = "Explorado"
     _VISITADO = "Visitado"
@@ -165,7 +166,10 @@ class AgentBE(AgentIA):
         for pos, percepcao in percepcoes.items():
 
             if isinstance(percepcao, Resources):
-                self.memory[pos] = self._RECURSO
+                if percepcao.valor == 50:
+                    self.memory[pos] = self._RECURSONAOCOLETAVEL
+                else:
+                    self.memory[pos] = self._RECURSO
             elif isinstance(percepcao, ContinuousObstacle):
                 self.memory[pos] = self._OBSTACULOS
             elif isinstance(percepcao, AgentIA):
